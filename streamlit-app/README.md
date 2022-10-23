@@ -7,7 +7,8 @@ git clone https://github.com/DeevsTheBest/TenderHack.git
 cd TenderHack
 ```
 
-Создайте окружения и загрузите библиотеки (python 3.9.6)
+Создайте окружения и загрузите библиотеки (python 3.9.6)\
+[JamSpell](https://github.com/bakwc/JamSpell) может не устанавливаться. Issue по этому поводу [тут](https://github.com/bakwc/JamSpell/issues/73#issuecomment-465635464)
 
 ```
 cd streamlit-app
