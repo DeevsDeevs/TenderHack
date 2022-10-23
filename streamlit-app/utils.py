@@ -10,6 +10,7 @@ from copy import deepcopy
 import time
 import json
 import nltk 
+import scipy
 
 
 def clear_text(text, punctuation, morph):
@@ -67,18 +68,21 @@ def string_dist(str1, str2):
                                       scaling=0.2)
 
 
-def prepare_data(data: pd.DataFrame) -> pd.DataFrame:
+
+def prepare_data(data: pd.DataFrame, min_price=0.0, max_price=float('inf'), kpgz_code = "") -> pd.DataFrame:
+    if max_price != 0.0:
+        data = data.loc[(data['price'] >= min_price) &
+                        (data['price'] <= max_price)]
+    if  kpgz_code != "":
+        data = data.loc[data['Код КПГЗ'].str.startswith(kpgz_code)]
     return data
 
 def filter_for_rec(kpgz, kpgz_table):
     return kpgz != kpgz_table
 
-def get_search_results(search_request: str, additional_info: str, data: pd.DataFrame, bert_cls: BertCLS, index: faiss.IndexFlatIP, tokenizer, kpgz_dict: dict, rec = False, rec_dict = dict(), item_index = None) -> pd.DataFrame:
+def get_search_results(search_request: str, additional_info: str, data: pd.DataFrame, bert_cls: BertCLS, embeddings, index: faiss.IndexFlatIP, tokenizer, kpgz_dict: dict, rec = False, rec_dict = dict(), item_id = None, min_price=0.0, max_price=float('inf'), kpgz_code="") -> pd.DataFrame:
     new_data = deepcopy(data)
-    new_data = prepare_data(data=new_data)
-
-    search_request = search_request
-    search_request += " [SEP] " + additional_info
+    new_data = prepare_data(data=new_data, min_price=min_price, max_price=max_price, kpgz_code=kpgz_code)
     kpgz_table = get_kpgz(bert_cls, tokenizer, search_request, kpgz_dict)
     if rec:
         new_data['sub_kpgz'] = new_data['Код КПГЗ'].apply(lambda x: filter_for_rec(x, kpgz_table))
@@ -93,19 +97,28 @@ def get_search_results(search_request: str, additional_info: str, data: pd.DataF
 
     faiss_results = new_data.loc[selected].reset_index(
         drop=True)  # type: ignore
+
+    
+    faiss_results['additional_dist'] = faiss_results['Характеристики'].apply(lambda x: sum((tok in x) for tok in  nltk.word_tokenize(additional_info, language="ru")))
+    faiss_results['cos_sim'] = list(torch.nn.functional.cosine_similarity(torch.from_numpy(embeddings[selected]), torch.from_numpy(xq)).cpu().detach().numpy())
     faiss_results['string_dist'] = faiss_results['Название СТЕ'].apply(
         lambda x: string_dist(x, search_request))
+
+    a = faiss_results['cos_sim'].to_list()
+    conf_int = scipy.stats.norm.interval(0.95, loc=np.mean(a), scale=scipy.stats.sem(a))[0]
+    conf_int = max(conf_int, 0.65)
+    faiss_results = faiss_results.loc[faiss_results['cos_sim'] >= conf_int]
 
     if rec:
         faiss_results = faiss_results[faiss_results['sub_kpgz'] == True]
         
-        if item_index in rec_dict:
-            history_rec_ids = rec_dict[item_index]
+        if item_id in rec_dict:
+            history_rec_ids = rec_dict[item_id]
+            history_rec_ids = sorted(history_rec_ids, key=lambda x: x[1], reverse=True)[:10]
             history_rec_ids = set(i[0] for i in history_rec_ids)
             history_rec_df = new_data[new_data['ID СТЕ'].isin(history_rec_ids)]
-            return pd.concat([history_rec_df, faiss_results.sort_values(by=['kpgz_sim', 'string_dist'], ascending=[False, False]).head(5)])
+            return pd.concat([history_rec_df, faiss_results.sort_values(by=['kpgz_sim', 'string_dist'], ascending=[False, False]).head(10)])
 
+        return faiss_results.sort_values(by=['kpgz_sim', 'string_dist'], ascending=[False, False]).head(10)
 
-        return faiss_results.sort_values(by=['kpgz_sim', 'string_dist'], ascending=[False, False]).head(5)
-
-    return faiss_results.sort_values(by=['kpgz_sim', 'string_dist'], ascending=[False, False]).head(5)
+    return faiss_results.sort_values(by=['additional_dist', 'kpgz_sim', 'string_dist'], ascending=[False, False, False]).head(10)

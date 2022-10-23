@@ -3,3 +3,5 @@ streamlit-app/median_prices.feather
 streamlit-app/preprocess_all_columns_lem.feather
 streamlit-app/rec_data.parquet
 .DS_Store
+streamlit-app/LABSE-5307-epoch-5-lem.feather
+streamlit-app/BertCLS_epoch_5-lem.pth
