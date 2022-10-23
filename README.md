@@ -40,6 +40,5 @@
 
 
 ## Полезное:
-[Данные](https://github.com/EugGolovanov/Zakupki/tree/main/data)\
-[Как запустить локально (on Windows 11)](https://github.com/EugGolovanov/Zakupki/tree/main/streamlit-app)\
-[Кодовая база для обучения](https://github.com/EugGolovanov/Zakupki/tree/main/notebooks)
+[Как запустить локально](https://github.com/DeevsTheBest/TenderHack/tree/master/streamlit-app)\
+[Кодовая база для обучения](https://github.com/DeevsTheBest/TenderHack/tree/master/notebooks)
