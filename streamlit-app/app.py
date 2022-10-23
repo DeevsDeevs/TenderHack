@@ -17,7 +17,7 @@ import nltk
 import string
 import jamspell
 
-nltk.download('punkt')
+# nltk.download('punkt')
 
 
 @st.cache(allow_output_mutation=True)
@@ -108,7 +108,8 @@ def main():
         min_price, max_price = max_price, min_price
     if search_request:
         old_search_request = search_request
-        search_request = jsp.FixFragment(search_request)
+        if not utils.has_only_latin_letters(search_request):
+            search_request = jsp.FixFragment(search_request)
         if old_search_request != search_request:
             st.markdown(f"""
                         Автоисправление <br/>
@@ -135,6 +136,8 @@ def main():
         fig = get_fig_price(search_results['price'])
         if fig is not None:
             figs_expander.pyplot(fig)
+        search_results = search_results[['ID СТЕ', 'Название_СТЕ_source', 'Характеристики', 'price', 'Категория', 'Код КПГЗ']]
+        search_results = search_results.rename(columns = {'Название_СТЕ_source': 'Название СТЕ', 'price': 'Цена'})
         gb_main = st_agg.GridOptionsBuilder.from_dataframe(search_results)
         gb_main.configure_default_column(
             groupable=True, value=True, enableRowGroup=True, editable=False)
@@ -155,6 +158,19 @@ def main():
         )
         selected_main_row = grid_main_response['selected_rows']
         if len(selected_main_row) != 0:
+            info_expander = st.expander('Полная информация')
+            info_expander.markdown(f"""
+                Название: {selected_main_row[0]['Название СТЕ']}
+
+                Категория: {selected_main_row[0]['Категория']}
+
+                Код КПГЗ: {selected_main_row[0]['Код КПГЗ']}
+
+                Цена: {selected_main_row[0]['Цена']} ₽
+
+                Характеристики: <br/>{selected_main_row[0]['Характеристики']}
+                
+            """, unsafe_allow_html=True)
             near_id = -1
             row_index = selected_main_row[0]['_selectedRowNodeInfo']['nodeRowIndex']
 
@@ -169,8 +185,10 @@ def main():
             
             recommend_results = utils.get_search_results(search_request=selected_main_row[0]['Название СТЕ'].strip().lower(), additional_info=additional_info, data=data, 
                                                   bert_cls = bert_cls, embeddings=embeddings, index=index, tokenizer=tokenizer,
-                                                kpgz_dict = kpgz_dict, rec = True, rec_dict=rec_dict, item_id=near_id)
-            gb_rec = st_agg.GridOptionsBuilder.from_dataframe(search_results)
+                                                  kpgz_dict = kpgz_dict, rec = True, rec_dict=rec_dict, item_id=near_id)
+            recommend_results = recommend_results[['ID СТЕ', 'Название_СТЕ_source', 'Характеристики', 'price', 'Категория', 'Код КПГЗ']]
+            recommend_results = recommend_results.rename(columns = {'Название_СТЕ_source': 'Название СТЕ', 'price': 'Цена'})
+            gb_rec = st_agg.GridOptionsBuilder.from_dataframe(recommend_results)
             gb_rec.configure_default_column(
                 groupable=True, value=True, enableRowGroup=True, editable=False)
             gb_rec.configure_side_bar()

@@ -11,12 +11,18 @@ import time
 import json
 import nltk 
 import scipy
+from transliterate import translit
+import string
 
 
 def clear_text(text, punctuation, morph):
     tokens = nltk.word_tokenize(text, language="ru")
     tokens = [morph.parse(i)[0].normal_form for i in tokens if i not in punctuation]
     return " ".join(tokens)
+
+def has_only_latin_letters(name):
+    char_set = string.ascii_letters
+    return all((True if x in char_set else False for x in name))
 
 def get_model_tokenizer(hub_name: str):
     with open("bert_config.json", "r") as read_config:
@@ -80,7 +86,7 @@ def prepare_data(data: pd.DataFrame, min_price=0.0, max_price=float('inf'), kpgz
 def filter_for_rec(kpgz, kpgz_table):
     return kpgz != kpgz_table
 
-def get_search_results(search_request: str, additional_info: str, data: pd.DataFrame, bert_cls: BertCLS, embeddings, index: faiss.IndexFlatIP, tokenizer, kpgz_dict: dict, rec = False, rec_dict = dict(), item_id = None, min_price=0.0, max_price=float('inf'), kpgz_code="") -> pd.DataFrame:
+def get_search_results(search_request: str, additional_info: str, data: pd.DataFrame, bert_cls: BertCLS, embeddings, index: faiss.IndexFlatIP, tokenizer, kpgz_dict: dict, rec = False, rec_dict = dict(), item_id = None, min_price=0.0, max_price=float('inf'), kpgz_code="", trans = False) -> pd.DataFrame:
     new_data = deepcopy(data)
     new_data = prepare_data(data=new_data, min_price=min_price, max_price=max_price, kpgz_code=kpgz_code)
     kpgz_table = get_kpgz(bert_cls, tokenizer, search_request, kpgz_dict)
@@ -120,5 +126,11 @@ def get_search_results(search_request: str, additional_info: str, data: pd.DataF
             return pd.concat([history_rec_df, faiss_results.sort_values(by=['kpgz_sim', 'string_dist'], ascending=[False, False]).head(10)])
 
         return faiss_results.sort_values(by=['kpgz_sim', 'string_dist'], ascending=[False, False]).head(10)
+    
+    if len(faiss_results) == 0 and not trans:
+        ru_search_request = translit(search_request, 'ru')
+        return get_search_results(search_request=ru_search_request, additional_info=additional_info, data=data, 
+                                                  bert_cls = bert_cls, embeddings=embeddings, index=index, tokenizer=tokenizer, kpgz_dict = kpgz_dict,
+                                                  min_price=min_price, max_price=max_price, kpgz_code=kpgz_code, trans=True)
 
     return faiss_results.sort_values(by=['additional_dist', 'kpgz_sim', 'string_dist'], ascending=[False, False, False]).head(10)
