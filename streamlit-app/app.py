@@ -15,6 +15,7 @@ import st_aggrid as st_agg
 import pymorphy2
 import nltk
 import string
+import jamspell
 
 nltk.download('punkt')
 
@@ -55,7 +56,10 @@ def load_all():
     punctuation = set(string.punctuation)
     morph = pymorphy2.MorphAnalyzer()
 
-    return data, names_counts, tokenizer, bert_cls, embeddings, index, kpgz_dict, rec_dict, punctuation, morph
+    jsp = jamspell.TSpellCorrector()
+    jsp.LoadLangModel('model_ru_en.bin')
+
+    return data, names_counts, tokenizer, bert_cls, embeddings, index, kpgz_dict, rec_dict, punctuation, morph, jsp
 
 def get_fig_price(series: pd.Series):
     try: 
@@ -93,7 +97,7 @@ def main():
     st.markdown("""
     # Tender Search Engine 
     """)
-    data, names_counts, tokenizer, bert_cls, embeddings, index, kpgz_dict, rec_dict, punctuation, morph = load_all()
+    data, names_counts, tokenizer, bert_cls, embeddings, index, kpgz_dict, rec_dict, punctuation, morph, jsp = load_all()
     search_request = st.text_input('Введите слова для поиска:').lower().strip()
     search_expander = st.expander('Дополнительные настройки')
     additional_info = search_expander.text_input('Ключевые характеристики').lower().strip()
@@ -103,6 +107,13 @@ def main():
     if max_price < min_price:
         min_price, max_price = max_price, min_price
     if search_request:
+        old_search_request = search_request
+        search_request = jsp.FixFragment(search_request)
+        if old_search_request != search_request:
+            st.markdown(f"""
+                        Автоисправление <br/>
+                        {old_search_request} было заменено на {search_request}
+                        """, unsafe_allow_html=True)
         cnt = 0
         pos_pop_requests = []
         for val in (names_counts.index):
@@ -113,8 +124,8 @@ def main():
                     if cnt == 3:
                         break
         st.markdown(f"""
-        Автодополнение: <br/> {r"<br/>".join(pos_pop_requests)}
-        """, unsafe_allow_html=True)
+                    Автодополнение: <br/> {r"<br/>".join(pos_pop_requests)}
+                    """, unsafe_allow_html=True)
         search_request = utils.clear_text(search_request, punctuation, morph)
         additional_info = utils.clear_text(additional_info, punctuation, morph)
         search_results = utils.get_search_results(search_request=search_request, additional_info=additional_info, data=data, 
