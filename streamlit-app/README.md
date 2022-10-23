@@ -12,7 +12,7 @@ cd TenderHack
 ```
 cd streamlit-app
 python -m venv venv
-venv\Scripts\activate
+venv/bin/activate
 pip install gdown
 pip install -r requirements.txt
 ```
