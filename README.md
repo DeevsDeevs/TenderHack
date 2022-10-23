@@ -16,7 +16,7 @@
 
 ## Решение
 
-![scheme](https://github.com/EugGolovanov/Zakupki/blob/main/images/app-work-2.jpg)
+![scheme](https://github.com/DeevsTheBest/TenderHack/blob/master/images/photo_2022-10-23_16-52-30.jpg)
 
 Проект представляет из себя комбинаицю самых свежих практик и технологий,\
 благодаря чему способен производить поиск закупок и работ параллельно с сопутсвующими товарами менее чем за пол секундуы!
