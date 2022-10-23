@@ -10,6 +10,7 @@ cd TenderHack
 Создайте окружения и загрузите библиотеки (python 3.9.6)\
 [JamSpell](https://github.com/bakwc/JamSpell) может не устанавливаться. Issue по этому поводу [тут](https://github.com/bakwc/JamSpell/issues/73#issuecomment-465635464)
 
+Есть проблема с nltk, почему-то скачиваются данные не в том формате (раздел punkt nltk). Необходимо выбрать один из путей поиска nltk и там исправить russian.pkl на ru.pkl.
 ```
 cd streamlit-app
 python -m venv venv
