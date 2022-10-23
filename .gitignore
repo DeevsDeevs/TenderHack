@@ -7,3 +7,5 @@ streamlit-app/LABSE-5307-epoch-5-lem.feather
 streamlit-app/BertCLS_epoch_5-lem.pth
 streamlit-app/model_ru_en.bin
 streamlit-app/model_ru_en.bin.spell
+streamlit-app/356575_tokenized_texts.npy
+streamlit-app/goods.feather

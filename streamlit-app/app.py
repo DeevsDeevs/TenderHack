@@ -59,7 +59,12 @@ def load_all():
     jsp = jamspell.TSpellCorrector()
     jsp.LoadLangModel('model_ru_en.bin')
 
-    return data, names_counts, tokenizer, bert_cls, embeddings, index, kpgz_dict, rec_dict, punctuation, morph, jsp
+    bm25 = utils.BM25Model(src = '356575_tokenized_texts.npy')
+    bm25.fit()
+
+    goods_df = pd.read_feather('goods.feather')
+
+    return data, names_counts, tokenizer, bert_cls, embeddings, index, kpgz_dict, rec_dict, punctuation, morph, jsp, bm25, goods_df
 
 def get_fig_price(series: pd.Series):
     try: 
@@ -97,7 +102,7 @@ def main():
     st.markdown("""
     # Tender Search Engine 
     """)
-    data, names_counts, tokenizer, bert_cls, embeddings, index, kpgz_dict, rec_dict, punctuation, morph, jsp = load_all()
+    data, names_counts, tokenizer, bert_cls, embeddings, index, kpgz_dict, rec_dict, punctuation, morph, jsp, bm25, goods_df = load_all()
     search_request = st.text_input('Введите слова для поиска:').lower().strip()
     search_expander = st.expander('Дополнительные настройки')
     additional_info = search_expander.text_input('Ключевые характеристики').lower().strip()
@@ -131,7 +136,7 @@ def main():
         additional_info = utils.clear_text(additional_info, punctuation, morph)
         search_results = utils.get_search_results(search_request=search_request, additional_info=additional_info, data=data, 
                                                   bert_cls = bert_cls, embeddings=embeddings, index=index, tokenizer=tokenizer, kpgz_dict = kpgz_dict,
-                                                  min_price=min_price, max_price=max_price, kpgz_code=kpgz_code)
+                                                  min_price=min_price, max_price=max_price, kpgz_code=kpgz_code, bm25 = bm25, goods_df=goods_df)
         figs_expander = st.expander("Анализ рынка")
         fig = get_fig_price(search_results['price'])
         if fig is not None:
