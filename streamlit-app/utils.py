@@ -152,7 +152,8 @@ def get_search_results(search_request: str, additional_info: str, data: pd.DataF
     if bm25 != None:
         ids, scores = bm25.predict(search_request)
         bm25_top10 = goods_df.iloc[ids].head(10) # type: ignore
-        bm25_top10['kpgz_sim'] = bm25_top10['Код КПГЗ'].apply(lambda x: calc_kpgz(x, kpgz_table))
+        # bm25_top10['kpgz_sim'] = bm25_top10['Код КПГЗ'].apply(lambda x: calc_kpgz(x, kpgz_table))
+        bm25_top10['kpgz_sim'] = 0 
 
     faiss.normalize_L2(xq)
     k = 100
